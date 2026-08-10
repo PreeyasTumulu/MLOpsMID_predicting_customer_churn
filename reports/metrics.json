@@ -12,7 +12,7 @@
       "false_positives": 3964,
       "false_negatives": 7389,
       "true_positives": 42611,
-      "fit_seconds": 0.7123788000026252
+      "fit_seconds": 0.6485908999966341
     },
     "random_forest": {
       "accuracy": 0.9992173942631597,
@@ -24,7 +24,7 @@
       "false_positives": 3,
       "false_negatives": 66,
       "true_positives": 49934,
-      "fit_seconds": 15.108070299997053
+      "fit_seconds": 15.135554799999227
     },
     "hist_gradient_boosting": {
       "accuracy": 0.9999773157757438,
@@ -36,7 +36,7 @@
       "false_positives": 0,
       "false_negatives": 2,
       "true_positives": 49998,
-      "fit_seconds": 10.759154600003967
+      "fit_seconds": 7.8910641000038595
     }
   }
 }

@@ -1,0 +1,278 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python -m src.data.ingest
+    deps:
+    - path: data/raw/customer_churn_dataset-testing-master.csv
+      hash: md5
+      md5: 55289b95d9b4310f554778c725097c5b
+      size: 3282220
+    - path: data/raw/customer_churn_dataset-training-master.csv
+      hash: md5
+      md5: a8d02f389b1e2a894b1decc4dfb658be
+      size: 23448754
+    - path: src/config.py
+      hash: md5
+      md5: 0b5876d6084aec8157aa54288999e049
+      size: 1392
+    - path: src/data/ingest.py
+      hash: md5
+      md5: 066f51bc51e9522b9ae85547929e3b1f
+      size: 4585
+    params:
+      params.yaml:
+        data:
+          raw_train: data/raw/customer_churn_dataset-training-master.csv
+          raw_test: data/raw/customer_churn_dataset-testing-master.csv
+          interim_dir: data/interim
+          processed_dir: data/processed
+          target: churn
+          id_column: customer_id
+    outs:
+    - path: data/interim/test.csv
+      hash: md5
+      md5: 69d4e04ac20b24fddcef7d81d86f1eee
+      size: 3282221
+    - path: data/interim/train.csv
+      hash: md5
+      md5: 65b59619cd61ba9bbadf3301cb1cd27e
+      size: 30905523
+  preprocess:
+    cmd: python -m src.data.preprocess
+    deps:
+    - path: data/interim/test.csv
+      hash: md5
+      md5: 69d4e04ac20b24fddcef7d81d86f1eee
+      size: 3282221
+    - path: data/interim/train.csv
+      hash: md5
+      md5: 65b59619cd61ba9bbadf3301cb1cd27e
+      size: 30905523
+    - path: src/config.py
+      hash: md5
+      md5: 0b5876d6084aec8157aa54288999e049
+      size: 1392
+    - path: src/data/preprocess.py
+      hash: md5
+      md5: b47da05019567816deb0777bf1090ac6
+      size: 8519
+    params:
+      params.yaml:
+        data:
+          raw_train: data/raw/customer_churn_dataset-training-master.csv
+          raw_test: data/raw/customer_churn_dataset-testing-master.csv
+          interim_dir: data/interim
+          processed_dir: data/processed
+          target: churn
+          id_column: customer_id
+        preprocess:
+          val_size: 0.2
+          stratify: true
+          numeric_features:
+          - age
+          - tenure
+          - usage_frequency
+          - support_calls
+          - payment_delay
+          - total_spend
+          - last_interaction
+          nominal_features:
+          - gender
+          - subscription_type
+          ordinal_features:
+            contract_length:
+            - Monthly
+            - Quarterly
+            - Annual
+        seed: 42
+        train.sample_rows:
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 69d4e04ac20b24fddcef7d81d86f1eee
+      size: 3282221
+    - path: data/processed/train.csv
+      hash: md5
+      md5: ef73e792b6ee231fdf3428156e0a639c
+      size: 24019208
+    - path: data/processed/val.csv
+      hash: md5
+      md5: c0a43ec6486ff7f9003f975747a7dced
+      size: 6004782
+  train:
+    cmd: python -m src.models.train
+    deps:
+    - path: data/processed/train.csv
+      hash: md5
+      md5: ef73e792b6ee231fdf3428156e0a639c
+      size: 24019208
+    - path: data/processed/val.csv
+      hash: md5
+      md5: c0a43ec6486ff7f9003f975747a7dced
+      size: 6004782
+    - path: src/config.py
+      hash: md5
+      md5: 0b5876d6084aec8157aa54288999e049
+      size: 1392
+    - path: src/data/preprocess.py
+      hash: md5
+      md5: b47da05019567816deb0777bf1090ac6
+      size: 8519
+    - path: src/models/metrics.py
+      hash: md5
+      md5: 1e26b11124457edc3fbf86abe0a13fe2
+      size: 3540
+    - path: src/models/train.py
+      hash: md5
+      md5: bc8537d5e4f6876c9f254350db175cb4
+      size: 9111
+    params:
+      params.yaml:
+        mlflow:
+          experiment_name: churn_prediction
+          tracking_uri: sqlite:///mlflow.db
+          registered_model_name: churn_classifier
+        preprocess:
+          val_size: 0.2
+          stratify: true
+          numeric_features:
+          - age
+          - tenure
+          - usage_frequency
+          - support_calls
+          - payment_delay
+          - total_spend
+          - last_interaction
+          nominal_features:
+          - gender
+          - subscription_type
+          ordinal_features:
+            contract_length:
+            - Monthly
+            - Quarterly
+            - Annual
+        seed: 42
+        train:
+          primary_metric: recall
+          sample_rows:
+          models:
+            logistic_regression:
+              max_iter: 1000
+              C: 1.0
+              class_weight: balanced
+            random_forest:
+              n_estimators: 200
+              max_depth: 16
+              min_samples_leaf: 5
+              n_jobs: -1
+              class_weight: balanced
+            hist_gradient_boosting:
+              max_iter: 150
+              learning_rate: 0.1
+              max_depth: 6
+              class_weight: balanced
+    outs:
+    - path: models/best_model.pkl
+      hash: md5
+      md5: 8061c9bce9f8aca7465ffc1bb942f452
+      size: 551969
+    - path: reports/metrics.json
+      hash: md5
+      md5: c5f7bf7466fbe34823fd16aaf7d42a84
+      size: 1215
+  evaluate:
+    cmd: python -m src.models.evaluate
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 69d4e04ac20b24fddcef7d81d86f1eee
+      size: 3282221
+    - path: models/best_model.pkl
+      hash: md5
+      md5: 8061c9bce9f8aca7465ffc1bb942f452
+      size: 551969
+    - path: reports/metrics.json
+      hash: md5
+      md5: c5f7bf7466fbe34823fd16aaf7d42a84
+      size: 1215
+    - path: src/config.py
+      hash: md5
+      md5: 0b5876d6084aec8157aa54288999e049
+      size: 1392
+    - path: src/models/evaluate.py
+      hash: md5
+      md5: 95edc1892c7d4a24ef98be4522675223
+      size: 6346
+    - path: src/models/metrics.py
+      hash: md5
+      md5: 1e26b11124457edc3fbf86abe0a13fe2
+      size: 3540
+    params:
+      params.yaml:
+        data:
+          raw_train: data/raw/customer_churn_dataset-training-master.csv
+          raw_test: data/raw/customer_churn_dataset-testing-master.csv
+          interim_dir: data/interim
+          processed_dir: data/processed
+          target: churn
+          id_column: customer_id
+        evaluate:
+          top_n_high_risk: 500
+        mlflow:
+          experiment_name: churn_prediction
+          tracking_uri: sqlite:///mlflow.db
+          registered_model_name: churn_classifier
+    outs:
+    - path: reports/high_risk_customers.csv
+      hash: md5
+      md5: 82d85f4af602047369895f8e797764e6
+      size: 14775
+    - path: reports/test_metrics.json
+      hash: md5
+      md5: cfb21f01882c25b53d529aba61b710b3
+      size: 643
+  audit:
+    cmd: python -m src.monitoring.audit
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 69d4e04ac20b24fddcef7d81d86f1eee
+      size: 3282221
+    - path: data/processed/train.csv
+      hash: md5
+      md5: ef73e792b6ee231fdf3428156e0a639c
+      size: 24019208
+    - path: src/config.py
+      hash: md5
+      md5: 0b5876d6084aec8157aa54288999e049
+      size: 1392
+    - path: src/monitoring/audit.py
+      hash: md5
+      md5: 990f0700e460eda3f48a43e59dd85a64
+      size: 11285
+    params:
+      params.yaml:
+        data:
+          raw_train: data/raw/customer_churn_dataset-training-master.csv
+          raw_test: data/raw/customer_churn_dataset-testing-master.csv
+          interim_dir: data/interim
+          processed_dir: data/processed
+          target: churn
+          id_column: customer_id
+        mlflow:
+          experiment_name: churn_prediction
+          tracking_uri: sqlite:///mlflow.db
+          registered_model_name: churn_classifier
+        preprocess.numeric_features:
+        - age
+        - tenure
+        - usage_frequency
+        - support_calls
+        - payment_delay
+        - total_spend
+        - last_interaction
+    outs:
+    - path: reports/data_audit.json
+      hash: md5
+      md5: ff9e28489bb452da74070ad9ecc445da
+      size: 2776

@@ -1,0 +1,109 @@
+# ---------------------------------------------------------------------------
+# The reproducible pipeline (requirements #3 and #8).
+#
+# `dvc repro` runs whatever is stale and nothing else. DVC decides staleness by
+# hashing each stage's deps, its params, and its outs -- so editing a single
+# hyperparameter in params.yaml re-runs training and evaluation but skips the
+# ingest of a 23 MB CSV that has not changed.
+#
+# The `params:` blocks are what make that precise. A stage listing `- seed`
+# genuinely depends on the seed, and changing it invalidates that stage.
+#
+#   dvc repro           # run the whole DAG, skipping what is current
+#   dvc repro train     # run up to and including one stage
+#   dvc dag             # print the graph
+#   dvc metrics show    # print every tracked metric
+# ---------------------------------------------------------------------------
+
+stages:
+  # -- 1. raw CSV -> schema-validated interim ------------------------------
+  ingest:
+    cmd: python -m src.data.ingest
+    deps:
+      - src/config.py
+      - src/data/ingest.py
+      - data/raw/customer_churn_dataset-training-master.csv
+      - data/raw/customer_churn_dataset-testing-master.csv
+    params:
+      - data
+    outs:
+      - data/interim/train.csv
+      - data/interim/test.csv
+
+  # -- 2. clean, split, and write the modelling frames ---------------------
+  preprocess:
+    cmd: python -m src.data.preprocess
+    deps:
+      - src/config.py
+      - src/data/preprocess.py
+      - data/interim/train.csv
+      - data/interim/test.csv
+    params:
+      - seed
+      - data
+      - preprocess
+      - train.sample_rows
+    outs:
+      - data/processed/train.csv
+      - data/processed/val.csv
+      - data/processed/test.csv
+
+  # -- 3. train every configured model, keep the best ----------------------
+  train:
+    cmd: python -m src.models.train
+    deps:
+      - src/config.py
+      - src/data/preprocess.py
+      - src/models/train.py
+      - src/models/metrics.py
+      - data/processed/train.csv
+      - data/processed/val.csv
+    params:
+      - seed
+      - preprocess
+      - train
+      - mlflow
+    outs:
+      - models/best_model.pkl
+    metrics:
+      # cache: false keeps metrics in git rather than the DVC cache, so they
+      # can be diffed across commits with `dvc metrics diff`.
+      - reports/metrics.json:
+          cache: false
+
+  # -- 4. score on the shifted holdout, rank retention targets -------------
+  evaluate:
+    cmd: python -m src.models.evaluate
+    deps:
+      - src/config.py
+      - src/models/evaluate.py
+      - src/models/metrics.py
+      - models/best_model.pkl
+      - data/processed/test.csv
+      - reports/metrics.json
+    params:
+      - data
+      - evaluate
+      - mlflow
+    metrics:
+      - reports/test_metrics.json:
+          cache: false
+    outs:
+      - reports/high_risk_customers.csv:
+          cache: false
+
+  # -- 5. audit the data for deterministic rules and drift -----------------
+  audit:
+    cmd: python -m src.monitoring.audit
+    deps:
+      - src/config.py
+      - src/monitoring/audit.py
+      - data/processed/train.csv
+      - data/processed/test.csv
+    params:
+      - data
+      - preprocess.numeric_features
+      - mlflow
+    metrics:
+      - reports/data_audit.json:
+          cache: false

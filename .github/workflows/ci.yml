@@ -1,0 +1,71 @@
+# ---------------------------------------------------------------------------
+# Continuous integration (requirement #7).
+#
+# Runs on every push to any branch AND on every pull request, which is exactly
+# the pair of triggers the brief names.
+#
+# The runner never has the datasets: data/raw is DVC-tracked and absent from
+# git, and this workflow deliberately does NOT run `dvc pull` -- the default
+# remote is a local folder on the developer's machine and is unreachable from
+# GitHub. The test suite runs entirely on synthetic fixtures for that reason.
+# ---------------------------------------------------------------------------
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# A new push to the same branch supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      # uv is installed with pip rather than a third-party action so the
+      # workflow has no external action version to keep current.
+      - name: Install uv
+        run: pip install uv
+
+      # Installs from the compiled lock, the same file used locally. Identical
+      # resolver plus identical pins is what makes requirement #8 a claim we
+      # can actually defend.
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
+
+      - name: Show resolved versions
+        run: |
+          python --version
+          python -c "import sklearn, pandas, mlflow, dvc; print('sklearn', sklearn.__version__); print('pandas', pandas.__version__); print('mlflow', mlflow.__version__); print('dvc', dvc.__version__)"
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Run tests
+        run: pytest --cov=src --cov-report=term-missing
+
+      # Proves the tests never touch the DVC-tracked data. If a test ever
+      # starts reading data/, this step fails and the guarantee is restored
+      # before it can rot.
+      - name: Verify the suite needs no DVC data
+        run: |
+          if [ -n "$(find data -name '*.csv' 2>/dev/null)" ]; then
+            echo "::error::CSV files present on the runner; the no-data guarantee is void"
+            exit 1
+          fi
+          echo "confirmed: no datasets on the runner, suite passed regardless"
