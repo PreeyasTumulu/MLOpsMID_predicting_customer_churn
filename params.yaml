@@ -1,0 +1,80 @@
+# ---------------------------------------------------------------------------
+# Single source of truth for every tunable in the pipeline.
+#
+# Nothing downstream may hard-code a path, a seed, or a hyperparameter. This
+# file is a DVC stage dependency, so changing any value here invalidates the
+# affected stages and `dvc repro` re-runs exactly those (requirement #8).
+# ---------------------------------------------------------------------------
+
+# Global RNG seed. Threaded into every split and every estimator so that two
+# runs of the same commit produce identical metrics.
+seed: 42
+
+data:
+  raw_train: data/raw/customer_churn_dataset-training-master.csv
+  raw_test: data/raw/customer_churn_dataset-testing-master.csv
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+  target: churn
+  id_column: customer_id  # dropped before modelling -- pure row identifier
+
+preprocess:
+  # Fraction of the training master held out for validation.
+  val_size: 0.2
+  stratify: true
+
+  numeric_features:
+    - age
+    - tenure
+    - usage_frequency
+    - support_calls
+    - payment_delay
+    - total_spend
+    - last_interaction
+
+  # Unordered categories -> one-hot.
+  nominal_features:
+    - gender
+    - subscription_type
+
+  # Genuinely ordered -> ordinal encoding preserves the ranking, which is
+  # information a one-hot would throw away. Order is low-commitment to high.
+  ordinal_features:
+    contract_length:
+      - Monthly
+      - Quarterly
+      - Annual
+
+train:
+  # Recall is the headline metric: a missed churner costs a customer, a false
+  # positive costs one retention email. Used to pick the best run.
+  primary_metric: recall
+
+  # Optional row cap for fast local iteration. null = use all 440k rows.
+  sample_rows: null
+
+  models:
+    logistic_regression:
+      max_iter: 1000
+      C: 1.0
+      class_weight: balanced
+
+    random_forest:
+      n_estimators: 200
+      max_depth: 16
+      min_samples_leaf: 5
+      n_jobs: -1
+      class_weight: balanced
+
+    gradient_boosting:
+      n_estimators: 150
+      learning_rate: 0.1
+      max_depth: 5
+
+mlflow:
+  experiment_name: churn_prediction
+  # File store by default. Point at sqlite:///mlflow.db when you need the
+  # Model Registry, which a plain file store cannot back.
+  tracking_uri: null
+  registered_model_name: churn_classifier

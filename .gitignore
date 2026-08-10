@@ -3,6 +3,7 @@
 # The raw CSVs are ~27 MB combined; committing them defeats the whole point.
 # ---------------------------------------------------------------------------
 data/raw/*.csv
+data/interim/
 data/processed/
 !data/**/.gitkeep
 
