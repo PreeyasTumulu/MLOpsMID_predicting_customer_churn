@@ -1,0 +1,17 @@
+name: churn-mlops
+
+channels:
+  - conda-forge
+  - defaults
+
+# Conda supplies ONLY the interpreter. All Python packages are installed with
+# uv from the compiled lock, so the local env and the GitHub Actions runner
+# resolve from the exact same pinned set:
+#
+#   conda env create -f environment.yml
+#   conda activate churn-mlops
+#   uv pip install -r requirements.txt
+#
+dependencies:
+  - python=3.12
+  - pip

@@ -1,0 +1,22 @@
+# Source-of-truth dependency list (hand-edited).
+# Compile to the fully-pinned lock with:
+#   uv pip compile requirements.in -o requirements.txt --universal
+# Never hand-edit requirements.txt -- it is generated.
+
+# --- core data / ML stack ---------------------------------------------------
+numpy>=2.1,<2.3
+pandas>=2.2,<3.0          # held below 3.0: CoW + string-dtype defaults changed
+scikit-learn==1.9.0
+matplotlib>=3.9,<4        # 3.9 is the first release built against numpy 2.x
+seaborn>=0.13,<0.14
+joblib>=1.4
+pyyaml>=6.0
+
+# --- MLOps tooling (the graded four) ----------------------------------------
+dvc==3.67.1               # req 3: data versioning + dvc.yaml pipeline
+mlflow==3.15.1            # req 4: experiment tracking + model registry
+pytest==9.1.1             # req 5: unit tests
+pytest-cov==7.1.0         # coverage output in CI logs
+
+# --- code quality -----------------------------------------------------------
+ruff>=0.6                 # lint step in the CI workflow
