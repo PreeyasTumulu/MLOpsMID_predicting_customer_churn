@@ -77,12 +77,23 @@ def coerce_dtypes(df: pd.DataFrame, target: str = "churn") -> pd.DataFrame:
     return out
 
 
-def clean(df: pd.DataFrame, target: str = "churn", id_column: str = "customer_id"):
-    """Run the full cleaning chain in the order the steps depend on."""
-    return coerce_dtypes(
-        drop_invalid_rows(drop_identifier(df, id_column), target),
-        target,
-    )
+def clean(
+    df: pd.DataFrame,
+    target: str = "churn",
+    id_column: str = "customer_id",
+    keep_identifier: bool = False,
+) -> pd.DataFrame:
+    """Run the full cleaning chain in the order the steps depend on.
+
+    ``keep_identifier=True`` retains ``customer_id`` in the output. The written
+    ``data/processed`` files use it, because the retention report has to name
+    which customers are high risk. It is never a leakage risk: the training
+    code strips it before fitting, and :func:`build_preprocessor` selects
+    features from an explicit allow-list with ``remainder="drop"``, so the
+    column cannot reach an estimator even by accident.
+    """
+    out = df if keep_identifier else drop_identifier(df, id_column)
+    return coerce_dtypes(drop_invalid_rows(out, target), target)
 
 
 def split_features_target(df: pd.DataFrame, target: str = "churn"):
@@ -174,8 +185,13 @@ def main(params_path: str | None = None) -> None:
     id_column = params["data"]["id_column"]
 
     # --- training master -> train / validation ---------------------------
+    # customer_id is retained for the retention report; see clean()'s docstring
+    # for why that is not a leakage path.
     train_master = clean(
-        pd.read_csv(interim_dir / "train.csv"), target=target, id_column=id_column
+        pd.read_csv(interim_dir / "train.csv"),
+        target=target,
+        id_column=id_column,
+        keep_identifier=True,
     )
 
     sample_rows = params["train"].get("sample_rows")
@@ -193,7 +209,10 @@ def main(params_path: str | None = None) -> None:
     # genuinely shifted distribution rather than a random split. That is what
     # the drift monitoring in stage 5 measures against.
     test_df = clean(
-        pd.read_csv(interim_dir / "test.csv"), target=target, id_column=id_column
+        pd.read_csv(interim_dir / "test.csv"),
+        target=target,
+        id_column=id_column,
+        keep_identifier=True,
     )
 
     for name, frame in (("train", train_df), ("val", val_df), ("test", test_df)):

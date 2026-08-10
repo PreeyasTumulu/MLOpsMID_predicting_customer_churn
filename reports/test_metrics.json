@@ -1,0 +1,25 @@
+{
+  "evaluated_model": "hist_gradient_boosting",
+  "holdout_rows": 64374,
+  "holdout_churn_rate": 0.4737,
+  "metrics": {
+    "accuracy": 0.5033087892627458,
+    "precision": 0.48813054001634953,
+    "recall": 0.998688223526711,
+    "f1": 0.655749354005168,
+    "roc_auc": 0.7362347285720574
+  },
+  "confusion": {
+    "true_negatives": 1947,
+    "false_positives": 31934,
+    "false_negatives": 40,
+    "true_positives": 30453
+  },
+  "drift_vs_validation": {
+    "delta_accuracy": -0.496669,
+    "delta_precision": -0.511869,
+    "delta_recall": -0.001272,
+    "delta_f1": -0.344231,
+    "delta_roc_auc": -0.263753
+  }
+}

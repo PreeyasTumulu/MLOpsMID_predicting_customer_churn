@@ -1,0 +1,104 @@
+{
+  "train_rows": 352665,
+  "holdout_rows": 64374,
+  "train_churn_rate": 0.5671,
+  "holdout_churn_rate": 0.4737,
+  "deterministic_rules": [
+    {
+      "feature": "support_calls",
+      "direction": ">=",
+      "threshold": 6.0,
+      "support": 94876,
+      "support_frac": 0.269,
+      "churn_rate": 1.0,
+      "holdout_support": 33138,
+      "holdout_churn_rate": 0.609904,
+      "holds_on_holdout": false
+    },
+    {
+      "feature": "total_spend",
+      "direction": "<=",
+      "threshold": 491.17244897959176,
+      "support": 90617,
+      "support_frac": 0.2569,
+      "churn_rate": 1.0,
+      "holdout_support": 29282,
+      "holdout_churn_rate": 0.521139,
+      "holds_on_holdout": false
+    },
+    {
+      "feature": "payment_delay",
+      "direction": ">=",
+      "threshold": 21.0,
+      "support": 67260,
+      "support_frac": 0.1907,
+      "churn_rate": 1.0,
+      "holdout_support": 27679,
+      "holdout_churn_rate": 0.76596,
+      "holds_on_holdout": false
+    },
+    {
+      "feature": "age",
+      "direction": ">=",
+      "threshold": 51.0,
+      "support": 65462,
+      "support_frac": 0.1856,
+      "churn_rate": 1.0,
+      "holdout_support": 21358,
+      "holdout_churn_rate": 0.529263,
+      "holds_on_holdout": false
+    }
+  ],
+  "rules_that_generalise": 0,
+  "distribution_shift": {
+    "age": {
+      "psi": 0.1032,
+      "verdict": "moderate_shift",
+      "reference_mean": 39.3818,
+      "current_mean": 41.971
+    },
+    "tenure": {
+      "psi": 0.0033,
+      "verdict": "stable",
+      "reference_mean": 31.2384,
+      "current_mean": 31.9948
+    },
+    "usage_frequency": {
+      "psi": 0.0111,
+      "verdict": "stable",
+      "reference_mean": 15.8233,
+      "current_mean": 15.0802
+    },
+    "support_calls": {
+      "psi": 0.3818,
+      "verdict": "major_shift",
+      "reference_mean": 3.6056,
+      "current_mean": 5.4007
+    },
+    "payment_delay": {
+      "psi": 0.2711,
+      "verdict": "major_shift",
+      "reference_mean": 12.9664,
+      "current_mean": 17.134
+    },
+    "total_spend": {
+      "psi": 0.1611,
+      "verdict": "moderate_shift",
+      "reference_mean": 631.8891,
+      "current_mean": 541.0234
+    },
+    "last_interaction": {
+      "psi": 0.0167,
+      "verdict": "stable",
+      "reference_mean": 14.478,
+      "current_mean": 15.4989
+    }
+  },
+  "features_shifted": [
+    "age",
+    "support_calls",
+    "payment_delay",
+    "total_spend"
+  ],
+  "interpretation": "Perfect validation scores are explained by the deterministic rule(s) above, which hold on the training master but not on the holdout master. The two files were generated differently, so validation metrics overstate real-world performance."
+}

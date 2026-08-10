@@ -1,0 +1,42 @@
+{
+  "primary_metric": "recall",
+  "best_model": "hist_gradient_boosting",
+  "models": {
+    "logistic_regression": {
+      "accuracy": 0.871233001009448,
+      "precision": 0.9148899624261944,
+      "recall": 0.85222,
+      "f1": 0.8824436966088532,
+      "roc_auc": 0.9443193696124923,
+      "true_negatives": 34203,
+      "false_positives": 3964,
+      "false_negatives": 7389,
+      "true_positives": 42611,
+      "fit_seconds": 0.7123788000026252
+    },
+    "random_forest": {
+      "accuracy": 0.9992173942631597,
+      "precision": 0.9999399243046239,
+      "recall": 0.99868,
+      "f1": 0.9993095650259664,
+      "roc_auc": 0.9999985432441638,
+      "true_negatives": 38164,
+      "false_positives": 3,
+      "false_negatives": 66,
+      "true_positives": 49934,
+      "fit_seconds": 15.108070299997053
+    },
+    "hist_gradient_boosting": {
+      "accuracy": 0.9999773157757438,
+      "precision": 1.0,
+      "recall": 0.99996,
+      "f1": 0.999979999599992,
+      "roc_auc": 0.9999875054366337,
+      "true_negatives": 38167,
+      "false_positives": 0,
+      "false_negatives": 2,
+      "true_positives": 49998,
+      "fit_seconds": 10.759154600003967
+    }
+  }
+}

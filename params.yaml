@@ -67,14 +67,31 @@ train:
       n_jobs: -1
       class_weight: balanced
 
-    gradient_boosting:
-      n_estimators: 150
+    # Histogram-based booster rather than the classic GradientBoostingClassifier:
+    # the classic one is exact-split and takes tens of minutes on 350k rows,
+    # this is the same algorithm family binned for large data.
+    hist_gradient_boosting:
+      max_iter: 150
       learning_rate: 0.1
-      max_depth: 5
+      max_depth: 6
+      class_weight: balanced
+
+evaluate:
+  # Size of the retention priority list. Set this to the number of customers
+  # the business team can realistically contact, not to a round number.
+  top_n_high_risk: 500
 
 mlflow:
   experiment_name: churn_prediction
-  # File store by default. Point at sqlite:///mlflow.db when you need the
-  # Model Registry, which a plain file store cannot back.
-  tracking_uri: null
+
+  # SQLite is required, not a preference: MLflow 3.x put the old ./mlruns file
+  # store into maintenance mode and raises on it unless MLFLOW_ALLOW_FILE_STORE
+  # is set. A database backend is also the only thing that can back the Model
+  # Registry, so this one setting buys both.
+  #
+  # View the runs with:
+  #   mlflow ui --backend-store-uri sqlite:///mlflow.db
+  tracking_uri: sqlite:///mlflow.db
+
+  # Best run is promoted into the Model Registry under this name.
   registered_model_name: churn_classifier
